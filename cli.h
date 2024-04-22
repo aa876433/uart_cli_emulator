@@ -7,8 +7,6 @@
 
 #include <stdint.h>
 
-#include "cli.h"
-
 typedef void (*command_func)(int argc, char *argv[]);
 
 typedef struct command {
