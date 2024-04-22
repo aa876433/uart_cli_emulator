@@ -220,7 +220,6 @@ void cli_get_same_prefix_command(const char *str) {
 
 
 void cli_display_complete(void) {
-
     command *cmd = g_cli.commands;
     int max_len = 0;
     int cmd_count = 0;
@@ -257,8 +256,7 @@ void cli_display_complete(void) {
 }
 
 void cli_auto_complete(void) {
-    if (g_cli.same_prefix_count == 0)
-    {
+    if (g_cli.same_prefix_count == 0) {
         return;
     }
 
@@ -270,29 +268,26 @@ void cli_auto_complete(void) {
 
     if (g_cli.same_prefix_count == 1) {
         prefix_len = g_cli.command_length[g_cli.command_index[0]] - pos;
-    }
-    else {
-        for (int i = pos; ;i++)
-        {
+    } else {
+        for (int i = pos; ; i++) {
             c = cmd[g_cli.command_index[0]].name[i];
             for (int j = 1; j < g_cli.same_prefix_count; j++) {
                 if (cmd[g_cli.command_index[j]].name[i] == '\0' ||
                     cmd[g_cli.command_index[j]].name[i] != c) {
                     goto EXIT;
-                    }
+                }
             }
             prefix_len++;
         }
     }
 
 
-    EXIT:
+EXIT:
     for (int i = pos; i < pos + prefix_len; i++) {
         c = cmd[g_cli.command_index[0]].name[i];
         printf("%c", c);
         gap_buf_insert(g_cli.gap, c);
     }
-
 }
 
 void cli_clear(void) {
