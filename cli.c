@@ -13,7 +13,7 @@
 #define MAX_HISTORY 8
 #define MAX_COMPLETE 128
 #define MAX_ARGS 8
-#define MAX_COMMAND_LNENGTH 256
+#define MAX_COMMAND_LENGTH 256
 #define DELIMS " \t\n"
 
 #define BACKSPACE 8
@@ -33,8 +33,8 @@ struct cli {
     void *gap;
     char *argv[MAX_COMPLETE];
     uint16_t *command_length;
-    char history[MAX_HISTORY][MAX_COMMAND_LNENGTH];
-    char backup[MAX_COMMAND_LNENGTH];
+    char history[MAX_HISTORY][MAX_COMMAND_LENGTH];
+    char backup[MAX_COMMAND_LENGTH];
     uint32_t command_count;
     uint32_t same_prefix_count;
     uint32_t command_index[MAX_COMPLETE];
@@ -67,7 +67,7 @@ void sort_commands(command commands[], int n) {
 
 void cli_init(void *commands) {
     g_cli.commands = commands;
-    void *gap = gap_buf_create(MAX_COMMAND_LNENGTH);
+    void *gap = gap_buf_create(MAX_COMMAND_LENGTH);
     g_cli.gap = gap;
     g_cli.tab = 0;
     g_cli.arrow = 0;
@@ -127,7 +127,7 @@ void cli_move_cursor(int num, uint8_t left) {
 }
 
 void cli_save_history(const char *str) {
-    strncpy(g_cli.history[g_cli.history_ptr], str, MAX_COMMAND_LNENGTH - 1);
+    strncpy(g_cli.history[g_cli.history_ptr], str, MAX_COMMAND_LENGTH - 1);
     g_cli.history_ptr = (g_cli.history_ptr + 1) % MAX_HISTORY;
     g_cli.history_size = g_cli.history_size >= MAX_HISTORY ? MAX_HISTORY : g_cli.history_size + 1;
     g_cli.history_move = 0;
@@ -161,7 +161,7 @@ void cli_handle_history(uint8_t up) {
         if (g_cli.history_move < g_cli.history_size) {
             if (g_cli.history_backup == 0) {
                 const char *str = gap_buf_get_all(g_cli.gap);
-                strncpy(g_cli.backup, str, MAX_COMMAND_LNENGTH - 1);
+                strncpy(g_cli.backup, str, MAX_COMMAND_LENGTH - 1);
                 g_cli.history_backup = 1;
             }
 
@@ -316,11 +316,28 @@ void cli_reset(void) {
 void cli_execute(char *str) {
     cli_parse(str);
     if (g_cli.argc > 0) {
-        const command *cmd = g_cli.commands;
-        for (int i = 0; i < g_cli.command_count; i++) {
-            if (0 == strncmp(cmd[i].name, g_cli.argv[0], MAX_COMMAND_LNENGTH - 1)) {
-                cmd[i].func(g_cli.argc - 1, &g_cli.argv[1]);
+        command *cmd = g_cli.commands;
+        int low = 0;
+        int high = g_cli.command_count - 1;
+        int find = 0;
+
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+            int cmp = strncmp(cmd[mid].name, g_cli.argv[0], MAX_COMMAND_LENGTH - 1);
+
+            if (cmp == 0) {
+                cmd[mid].func(g_cli.argc - 1, &g_cli.argv[1]);
+                find = 1;
+                break;
+            } else if (cmp < 0) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
             }
+        }
+
+        if (!find) {
+            printf("Command %s not found\n", g_cli.argv[0]);
         }
     }
 }
